@@ -1,4 +1,5 @@
 var redis = require('redis');
+//部署 :将"var client = redis.createClient();"修改为："var client = redis.createClient(Port, Host, {auth_pass: Auth});"将 Host、Port 和 Auth 分别替换为远程redis数据库给定的值。
 var uuid = require('node-uuid');
 var poolModule = require('generic-pool');
 var pool = poolModule.Pool({
@@ -107,7 +108,7 @@ exports.pick = function (info, callback) {
 	});
 };
 
-
+// 检查用户是否超过reng瓶次数限制
 function checkThrowTimes(owner, callback) {
 	pool.acquire(function (err, client) {
 		if(err) {

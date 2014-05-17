@@ -6,7 +6,8 @@
 		"redis": "*",
 		"node-uuid": "*",
 		"generic-pool": "*",
-		"body-parser": "*"
+		"body-parser": "*",
+		"mongoose": "*"
 	},
 	"devDependencies": {
 		"request": "*"
