@@ -45,8 +45,13 @@ function throwOneBottle(bottle, callback) {
 };
 
 exports.throw = function (bottle, callback) {
-	throwOneBottle(bottle, function (result) {
-		callback(result);
+	checkThrowTimes(bottle.owner, function (result) {
+		if(result.code === 0) {
+			return callback(result);
+		}
+		throwOneBottle(bottle, function (result) {
+			callback(result);
+		});
 	});
 };
 
@@ -88,11 +93,89 @@ function pickOneBottle(info, callback) {
 };
 
 exports.pick = function (info, callback) {
-	// 20% 概率捡到海星
-	if(Math.random() <= 0.2){
-		return callback({code: 1, msg: "海星"});
-	}
-	pickOneBottle(info, function (result) {
-		callback(result);
+	checkPickTimes(info.user, function(result) {
+		if(result.code === 0) {
+			return callback(result);
+		}
+		// 20% 概率捡到海星
+		if(Math.random() <= 0.2) {
+			return callback({code: 1, msg: "海星"});
+		}
+		pickOneBottle(info, function (result) {
+			callback(result);
+		});
 	});
 };
+
+
+function checkThrowTimes(owner, callback) {
+	pool.acquire(function (err, client) {
+		if(err) {
+			return callback({code: 0, msg: err});
+		}
+		// 到 2 号数据库检查用户是否超过reng瓶次数限制
+		client.SELECT(2, function(){
+			// 获取该用户reng瓶次数
+			client.GET(owner, function (err, result) {
+				if(result >= 10) {
+					return callback({code: 0, msg: "今天reng瓶子的机会已经用完啦~"});
+				}
+				// reng瓶次数加 1
+				client.INCR(owner, function(){
+					// 检查是否是当天第一次捡瓶子
+					// 若是，则设置记录该用户捡瓶次数键的生存期为 1 天
+					// 若不是，生存期保持不变
+					client.TTL(owner, function (err, ttl) {
+						if(ttl === -1) {
+							client.EXPIRE(owner, 86400, function() {
+								// 释放连接
+								pool.release(client);
+							});
+						} else {
+							// 释放连接
+							pool.release(client);
+						}
+						callback({code: 1, msg: ttl});
+					});
+				});
+			});
+		});
+	});
+};
+
+
+// 检查用户是否超过捡瓶次数限制
+function checkPickTimes(owner, callback) {
+	pool.acquire(function (err, client) {
+		if(err) {
+			return callback({code: 0, msg: err});
+		}
+		// 到 3 号数据库检查用户是否超过捡瓶次数限制
+		client.SELECT(3, function(){
+			// 获取该用户捡瓶次数
+			client.GET(owner, function (err, result) {
+				if(result >= 10) {
+					return callback({code: 0, msg: "今天捡瓶子的机会已经用完啦~"});
+				}
+				// 捡瓶次数加 1
+				client.INCR(owner, function() {
+					// 检查是否是当天第一次捡瓶子
+					// 若是，则设置记录该用户捡瓶次数键的生存期为 1 天
+					// 若不是，生存期保持不变
+					client.TTL(owner, function (err, ttl) {
+						if(ttl === -1){
+							client.EXPIRE(owner, 86400, function (){
+								// 释放连接
+								pool.release(client);
+							});
+						} else {
+							// 释放连接
+							pool.release(client);
+						}
+						callback({code: 1, msg: ttl});
+					});
+				});
+			});
+		});
+	});
+}
