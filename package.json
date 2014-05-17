@@ -1,0 +1,14 @@
+{
+	"name": "drifter",
+	"version": "0.0.1",
+	"dependencies": {
+		"express": "*",
+		"redis": "*",
+		"node-uuid": "*",
+		"generic-pool": "*",
+		"body-parser": "*"
+	},
+	"devDependencies": {
+		"request": "*"
+	}
+}
