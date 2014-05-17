@@ -67,7 +67,7 @@ function pickOneBottle(info, callback) {
 					return callback({code: 0, msg: err});
 				}
 				if(!bottleId) {
-					return callback({code: 0, msg:"大海空空如也..."});
+					return callback({code: 1, msg:"海星"});
 				}
 				// 根据漂流瓶 id 取到漂流瓶完整信息
 				client.HGETALL(bottleId, function (err, bottle) {
@@ -88,6 +88,10 @@ function pickOneBottle(info, callback) {
 };
 
 exports.pick = function (info, callback) {
+	// 20% 概率捡到海星
+	if(Math.random() <= 0.2){
+		return callback({code: 1, msg: "海星"});
+	}
 	pickOneBottle(info, function (result) {
 		callback(result);
 	});
